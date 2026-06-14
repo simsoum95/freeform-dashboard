@@ -10,7 +10,9 @@ It runs as a lightweight **overlay on your existing dashboard**: your cards stay
 real and live (they still update and remain editable in Home Assistant's own
 editor). A tiny edit button turns free arranging on and off.
 
-![Freeform Dashboard Editor — selecting and restyling a live card in place](docs/demo.gif)
+![Freeform Dashboard Editor — resizing a card live; its content scales with the frame](docs/demo.gif)
+
+> ⭐ **Like it? [Star the repo](https://github.com/simsoum95/freeform-dashboard) — it helps other Home Assistant users find it.**
 
 ---
 
