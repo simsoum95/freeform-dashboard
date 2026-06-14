@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [7.0.2] - 2026-06-14
+### Fixed
+- **Enlarging a card grew the frame more than the content** — making a card bigger left empty space around the content (a wide clock in a taller box looked like "the frame grew but the clock didn't"). On release, the frame now snaps to hug its scaled content, so enlarging grows what's *inside* the card with no blank margin around it. Shrink-to-fit (whitespace collapses first, then content) is unchanged.
+
 ## [7.0.1] - 2026-06-14
 ### Fixed
 - **Cards that had a handle but would not move** — some cards (e.g. one wrapped in a swipe/carousel) render as `display:inline`, and CSS ignores `transform` on inline elements, so dragging registered but the card never actually moved. Attached cards are now forced to a transformable display.

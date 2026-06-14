@@ -49,7 +49,7 @@
   // The fallback below keeps it scoped to a single dashboard path, so it can
   // never touch any other dashboard on the system.
   const CFG           = (typeof window !== 'undefined' && window.ShimonFreeformConfig) || {};
-  const VERSION       = 'v7.0.1';
+  const VERSION       = 'v7.0.2';
   const SCOPE_PREFIX  = (typeof CFG.scope === 'string') ? CFG.scope : '/dashboard-shimon';
   const GRID          = (CFG.grid > 0) ? CFG.grid : 8;   // snap-to-grid pixels
   const MIN_W         = 56;                       // legible floor — never shrink below this
@@ -586,6 +586,23 @@
     }
   }
 
+  // After an ENLARGE, the box can be bigger than the (uniformly scaled) content —
+  // a wide clock dragged into a tall box leaves empty space, which reads as "the
+  // frame grew but the clock didn't". Snap the card's box to hug its scaled
+  // content so enlarging grows the CONTENT, not the empty frame around it. This
+  // only ever SHRINKS the box (removes margin), never grows it — so shrink-to-fit
+  // (where the content already fills the box) is untouched.
+  function hugBox(card) {
+    if (!card.__shimonSized) return;
+    const inner = innerOf(card);
+    if (!inner) return;
+    const ir = inner.getBoundingClientRect();
+    if (ir.width < 8 || ir.height < 8) return;
+    const cr = card.getBoundingClientRect();
+    if (cr.height - ir.height > 6) card.style.height = Math.ceil(ir.height) + 'px';
+    if (cr.width  - ir.width  > 6) card.style.width  = Math.ceil(ir.width)  + 'px';
+  }
+
   // ── grid + snap visuals ─────────────────────────────────────────────────────
   let gridEl = null;
   function showGrid() {
@@ -1024,6 +1041,8 @@
       hideGrid();
       card.__shimonBusy = false;
       fit(card);                                  // final exact fit
+      hugBox(card);                               // remove empty space so the frame hugs the (enlarged) content
+      fit(card);                                  // re-fit inside the hugged box
       if (moved) save(rec.slotId, currentEntry(card));
     };
     window.addEventListener('pointermove', move);
