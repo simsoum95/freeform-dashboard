@@ -49,7 +49,7 @@
   // The fallback below keeps it scoped to a single dashboard path, so it can
   // never touch any other dashboard on the system.
   const CFG           = (typeof window !== 'undefined' && window.ShimonFreeformConfig) || {};
-  const VERSION       = 'v7.0';
+  const VERSION       = 'v7.0.1';
   const SCOPE_PREFIX  = (typeof CFG.scope === 'string') ? CFG.scope : '/dashboard-shimon';
   const GRID          = (CFG.grid > 0) ? CFG.grid : 8;   // snap-to-grid pixels
   const MIN_W         = 56;                       // legible floor — never shrink below this
@@ -841,7 +841,12 @@
     const id = slotId(card);
     card.dataset.shimonSlot = id;
 
-    if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+    const ccs = getComputedStyle(card);
+    if (ccs.position === 'static') card.style.position = 'relative';
+    // CSS ignores `transform` on display:inline elements — some wrapped cards
+    // (e.g. one inside a swipe/carousel) render inline, so the handle appears but
+    // dragging silently never moves them. Force a transformable display.
+    if (ccs.display === 'inline') card.style.display = 'inline-block';
     card.style.overflow = 'visible';
     unclip(card);
 

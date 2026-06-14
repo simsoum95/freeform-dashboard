@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [7.0.1] - 2026-06-14
+### Fixed
+- **Cards that had a handle but would not move** — some cards (e.g. one wrapped in a swipe/carousel) render as `display:inline`, and CSS ignores `transform` on inline elements, so dragging registered but the card never actually moved. Attached cards are now forced to a transformable display.
+
 ## [7.0.0] - 2026-06-14
 ### Added
 - **Style "format painter"** — copy one card's whole look (📋) and paint it onto one or many selected cards (🖌️), from the style panel or the multi-select toolbar.
