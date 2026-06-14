@@ -49,7 +49,7 @@
   // The fallback below keeps it scoped to a single dashboard path, so it can
   // never touch any other dashboard on the system.
   const CFG           = (typeof window !== 'undefined' && window.ShimonFreeformConfig) || {};
-  const VERSION       = 'v7.0.2';
+  const VERSION       = 'v7.0.3';
   const SCOPE_PREFIX  = (typeof CFG.scope === 'string') ? CFG.scope : '/dashboard-shimon';
   const GRID          = (CFG.grid > 0) ? CFG.grid : 8;   // snap-to-grid pixels
   const MIN_W         = 56;                       // legible floor — never shrink below this
