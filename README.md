@@ -10,8 +10,8 @@ It runs as a lightweight **overlay on your existing dashboard**: your cards stay
 real and live (they still update and remain editable in Home Assistant's own
 editor). A tiny edit button turns free arranging on and off.
 
-<!-- TODO: replace with a real screen recording before publishing -->
-![demo](docs/demo.gif)
+<!-- 🎥 Add a screen recording at docs/demo.gif, then uncomment the line below: -->
+<!-- ![demo](docs/demo.gif) -->
 
 ---
 
