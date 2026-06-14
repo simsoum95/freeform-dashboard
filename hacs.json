@@ -1,0 +1,6 @@
+{
+  "name": "Freeform Dashboard Editor",
+  "filename": "shimon-freeform.js",
+  "render_readme": true,
+  "homeassistant": "2024.1.0"
+}

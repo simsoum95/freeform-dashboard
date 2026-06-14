@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+
+# NEVER commit secrets or Home Assistant dumps
+ha_token.txt
+*token*.txt
+secrets.yaml
+dashboard_*.json
+ha_*.json
+ha_*.txt
