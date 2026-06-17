@@ -14,6 +14,8 @@ editor). A tiny edit button turns free arranging on and off.
 
 > ⭐ **Like it? [Star the repo](https://github.com/simsoum95/freeform-dashboard) — it helps other Home Assistant users find it.**
 
+> 🧱 **Prefer a dedicated free-layout view instead of an overlay?** This repo also ships **[Canvas Board](#-canvas-board-companion-card)** — a *card* that places any cards at fixed free positions, faithful on reload, with per-card delete & native editing.
+
 ---
 
 ## ✨ Features
@@ -132,6 +134,49 @@ To wipe all your freeform layouts and start clean, run in the browser console:
 ```js
 window.shimonFreeform.reset()
 ```
+
+---
+
+## 🧱 Canvas Board (companion card)
+
+The editor above is an **overlay** on an existing dashboard. If you instead want a
+**dedicated view where every card is freely placed and the layout is faithful on
+reload by construction**, use the companion card shipped in this repo:
+`shimon-canvas-board.js`.
+
+It's a normal Lovelace **card** that holds other cards at fixed `(x, y, w, h)`
+positions inside its own positioned container — so positions can't drift on reload.
+
+**Highlights**
+
+- Free **drag & resize** (independent width/height), **multi-select**, **undo**.
+- **Content hug / scale** — a card scales to fit its box; whitespace collapses
+  before the content shrinks; clocks & labels never clip.
+- **Per-card 🗑 delete** and **✎ edit** → opens Home Assistant's **native** card
+  editor (settings + code); a YAML-editor fallback if the native dialog isn't loaded.
+- **Cameras / media** become stable fixed-size boxes.
+- **Saves to the dashboard config** (cross-device) + instant per-device drafts.
+
+**Install**
+
+1. Copy `shimon-canvas-board.js` to `config/www/`.
+2. Add a resource → `/local/shimon-canvas-board.js`, Type: *JavaScript Module*
+   (or `/hacsfiles/freeform-dashboard/shimon-canvas-board.js` if installed via HACS).
+
+**Use** — add a card to any view:
+
+```yaml
+type: custom:shimon-canvas-board
+board_id: my_board          # any unique id; positions are stored against it
+height: 900                 # optional; auto-fits to content if omitted
+items:
+  - { x: 24,  y: 24,  w: 320, card: { type: markdown, content: "# Hello" } }
+  - { x: 360, y: 24,  w: 300, card: { type: weather-forecast, entity: weather.home } }
+  - { x: 24,  y: 220, w: 360, card: { type: entities, entities: [light.kitchen] } }
+```
+
+Then click the board's **✎ edit** toggle to drag, resize, delete (🗑), or edit (✎)
+each card. Run `node --check shimon-canvas-board.js` before sending a PR.
 
 ---
 

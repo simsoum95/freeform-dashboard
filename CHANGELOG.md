@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.4] - 2026-06-17
+### Added
+- **New companion component: `shimon-canvas-board`** — a *card* (not an overlay) you place in a view that holds any cards at fixed free `(x, y, w, h)` positions inside its own container, so the layout is **faithful on reload by construction**. Use it when you want a dedicated free-layout view rather than an overlay on an existing dashboard.
+  - Free **drag & resize** (independent width/height), **multi-select**, **undo**.
+  - **Content hug / scale** — a card scales to fit its box; whitespace collapses before the content shrinks; clocks & labels never clip.
+  - **Per-card 🗑 delete** and **✎ edit** that opens Home Assistant's **native** card editor (settings + code), with a YAML-editor fallback.
+  - **Cameras / media** render as stable fixed-size boxes.
+  - **Cross-device save** to the dashboard config; instant per-device drafts in `localStorage`.
+  - Dependency-free single file `shimon-canvas-board.js`; see the README for install + config.
+
 ## [7.0.3] - 2026-06-14
 ### Changed
 - Packaging/CI only — added the HACS validation workflow and listed the project for HACS. No changes to the editor itself.
