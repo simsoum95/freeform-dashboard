@@ -149,6 +149,7 @@
       await this._renderItems();
       this._applyEditMode();
       this._startHeartbeat();
+      try { this._ro = new ResizeObserver(() => this._fitBoard()); this._ro.observe(this); } catch (e) {}
     }
 
     async _renderItems() {
@@ -368,13 +369,31 @@
     }
 
     _fitHeight() {
-      if (this._height) { this._boardEl.style.height = this._height + 'px'; return; }
-      let max = 0; for (let i = 0; i < this._items.length; i++) { const it = this._items[i]; max = Math.max(max, it.pos.y + (it.pos.h || it.natH || 60)); }
-      this._boardEl.style.height = (max + PAD) + 'px';
+      let maxR = 0, maxB = 0;
+      for (let i = 0; i < this._items.length; i++) { const it = this._items[i]; maxR = Math.max(maxR, it.pos.x + (it.pos.w || it.natW || 60)); maxB = Math.max(maxB, it.pos.y + (it.pos.h || it.natH || 60)); }
+      this._designW = maxR + 24;
+      const h = this._height || (maxB + PAD);
+      this._designH = h;
+      this._boardEl.style.height = h + 'px';
+      this._fitBoard();
+    }
+
+    // Responsive: in VIEW mode, uniformly scale the whole board so its design
+    // width fits the viewport — fixed-pixel layouts then adapt to ANY screen,
+    // LTR or RTL. EDIT mode stays 1:1 so drag/resize coordinates are exact (the
+    // owner can scroll while arranging). No-op when the screen is already wide.
+    _fitBoard() {
+      if (!this._boardEl || !this._designW) return;
+      const avail = this.getBoundingClientRect().width || this._designW;
+      const fit = this._edit ? 1 : Math.max(0.25, Math.min(1, avail / this._designW));
+      this._fitScale = fit;
+      this._boardEl.style.transformOrigin = 'top left';
+      this._boardEl.style.transform = fit < 0.999 ? `scale(${fit})` : 'none';
+      this._boardEl.style.marginBottom = (fit < 0.999 && this._designH) ? `${Math.round(-this._designH * (1 - fit))}px` : '';
     }
 
     _toggleEdit() { this._edit = !this._edit; try { localStorage.setItem(editKey(this._boardId), this._edit ? '1' : '0'); } catch {} this._applyEditMode(); }
-    _applyEditMode() { this.classList.toggle('editing', this._edit); const b = this.shadowRoot.querySelector('.edit'); if (b) b.textContent = this._edit ? '✓ סיום עריכה' : '✎ עריכה'; if (!this._edit) { this._sel.clear(); this._renderSelection(); } }
+    _applyEditMode() { this.classList.toggle('editing', this._edit); const b = this.shadowRoot.querySelector('.edit'); if (b) b.textContent = this._edit ? '✓ סיום עריכה' : '✎ עריכה'; if (!this._edit) { this._sel.clear(); this._renderSelection(); } this._fitBoard(); }
 
     _beginDrag(e, i) {
       if (!this._edit) return;
@@ -704,6 +723,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.6 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.7 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();

@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.7] - 2026-06-17
+### Added
+- **Responsive — the board scales to fit any screen.** In view mode the whole board is uniformly scaled so its design width fits the viewport, so a fixed-pixel layout **adapts to smaller screens (and right-to-left UIs)** instead of overflowing. Edit mode stays 1:1 so drag/resize coordinates remain pixel-exact (the owner can scroll while arranging). No-op when the screen is already wide enough.
+
 ## [Canvas Board 1.6] - 2026-06-17
 ### Added
 - **➕ Add-card button** on the board (in edit mode) — opens Home Assistant's **native card picker** (visual + code), and the chosen card is dropped on the board, draggable. Falls back to a YAML editor if the native dialog isn't available.
