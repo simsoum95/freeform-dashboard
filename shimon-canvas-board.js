@@ -123,13 +123,15 @@
             cursor:pointer; color:#fff; background:#1e5aa6; box-shadow:0 3px 10px rgba(0,0,0,.3); }
           .btn.undo { background:#6b7280; display:none; }
           .btn.save { background:#2e9e5b; display:none; }
+          .btn.add { background:#7b3fa0; display:none; }
           :host(.editing) .edit { background:#2e9e5b; }
-          :host(.editing) .btn.undo, :host(.editing) .btn.save { display:inline-block; }
+          :host(.editing) .btn.undo, :host(.editing) .btn.save, :host(.editing) .btn.add { display:inline-block; }
           .hint { margin-inline-end:auto; font:500 13px/1.3 system-ui,sans-serif; color:#2e9e5b; display:none; }
           :host(.editing) .hint { display:block; }
         </style>
         <div class="bar">
           <span class="hint">עריכה — גרור להזזה · פינה/צד לגודל · לחץ לבחור · Shift או סימון לקבוצה</span>
+          <button class="btn add" type="button">➕ כרטיס</button>
           <button class="btn save" type="button">💾 שמור לכל המכשירים</button>
           <button class="btn undo" type="button">↶ ביטול</button>
           <button class="btn edit" type="button"></button>
@@ -142,6 +144,7 @@
       sh.querySelector('.edit').addEventListener('click', () => this._toggleEdit());
       sh.querySelector('.undo').addEventListener('click', () => this.undo());
       sh.querySelector('.save').addEventListener('click', () => this._saveToConfig());
+      sh.querySelector('.add').addEventListener('click', () => this._addCard());
       this._helpers = await window.loadCardHelpers();
       await this._renderItems();
       this._applyEditMode();
@@ -312,7 +315,7 @@
       for (let i = 0; i < this._children.length; i++) {
         const e = this._children[i], it = this._items[i];
         if (!e || !e.el || !e.el.isConnected) continue;
-        if (it.noclip) this._applyNoClip(e.el);
+        if (it.noclip && ((it.natH || 0) === 0 || it.natH < 130)) this._applyNoClip(e.el);
         else if (it.fixed) this._ensureFixed(i);
       }
     }
@@ -344,21 +347,24 @@
         fit = Math.min(W / natW, H / effH);
       }
       const scale = Math.max(0.05, Math.min(MAX_S, fit));
+      // no-clip (natural width + visible overflow) is for SHORT single-line cards
+      // (clocks/labels) that clip themselves sideways — NOT for tall content like a
+      // news list, which must scale-to-fit and clip to its box. natH 0 = not measured
+      // yet → treat as clock-like so a real clock never flashes clipped on first paint.
+      const nc = it.noclip && ((it.natH || 0) === 0 || it.natH < 130);
       e.el.style.transformOrigin = 'top left';
       e.el.style.transform = `scale(${scale})`;
-      // A no-clip card lays out at its NATURAL width (max-content) so its own card
-      // can never clip/ellipsize its content — not even before _measure runs. Other
-      // cards keep the pinned width so wrapping text doesn't reflow while zooming.
-      e.el.style.width = it.noclip ? 'max-content' : (natW + 'px');
+      e.el.style.width = nc ? 'max-content' : (natW + 'px');
       e.el.style.height = 'auto';
       e.itemEl.style.left = it.pos.x + 'px';
       e.itemEl.style.top = it.pos.y + 'px';
       e.itemEl.style.width = Math.max(8, W) + 'px';
       e.itemEl.style.height = Math.max(8, H) + 'px';
-      // A no-clip card (clock / label) must NEVER be cut — not even in the brief
-      // window before _measure computes the fit-scale. Let its host show overflow
-      // so wide content spills (harmless for transparent text) instead of clipping.
-      if (e.host) e.host.style.overflow = it.noclip ? 'visible' : '';
+      // Clock-like card: host shows overflow so it never clips, even before the scale
+      // settles. A tall card keeps overflow hidden so its content clips to its box
+      // (scaled to fit) instead of spilling over its neighbours.
+      if (e.host) e.host.style.overflow = nc ? 'visible' : '';
+      if (e.itemEl) e.itemEl.classList.toggle('noclip', nc);
     }
 
     _fitHeight() {
@@ -548,6 +554,52 @@
       });
     }
 
+    // "+ Add card" — open HA's native card picker (visual + code) and drop the
+    // chosen card on the board (draggable). YAML editor fallback if unavailable.
+    async _addCard() {
+      await this._ensureNativeEditor();
+      const onPicked = (card) => this._appendItem(card);
+      if (!this._openNativeCardPicker(onPicked)) this._openYamlEditor({ type: 'button', name: 'כרטיס חדש' }, onPicked);
+    }
+
+    _openNativeCardPicker(save) {
+      try {
+        if (!customElements.get('hui-dialog-create-card')) return false;
+        const params = {
+          lovelaceConfig: { views: [{ cards: [] }] },
+          path: [0],
+          saveConfig: (newLov) => { try { const cs = (newLov && newLov.views && newLov.views[0] && newLov.views[0].cards) || []; const card = cs[cs.length - 1]; if (card) save(card); } catch (e) {} },
+        };
+        this.dispatchEvent(new CustomEvent('show-dialog', {
+          bubbles: true, composed: true,
+          detail: { dialogTag: 'hui-dialog-create-card', dialogImport: () => Promise.resolve(), dialogParams: params },
+        }));
+        return true;
+      } catch (e) { return false; }
+    }
+
+    // Build an item object (same shape as setConfig) for a freshly added card.
+    _makeItem(card, pos) {
+      pos = pos || {};
+      const baseW = pos.w || 240, ctype = (card && card.type) || '';
+      const fixed = /camera|webrtc|picture|image|iframe|video/i.test(ctype);
+      const noclip = /button-card|clock/i.test(ctype);
+      return { card, idx: -1, baseW, natW: baseW, noclip, fixed, compact: !fixed, natH: 0, natHtight: 0,
+        pos: { x: pos.x != null ? pos.x : 32, y: pos.y != null ? pos.y : 32, w: baseW, h: pos.h || 0 } };
+    }
+
+    async _appendItem(card) {
+      if (!card || typeof card !== 'object') return;
+      const it = this._makeItem(card), index = this._items.length;
+      this._undo.push([{ remove: true, index, item: it }]); if (this._undo.length > 50) this._undo.shift();
+      this._items.push(it); this._children.push(undefined);
+      await this._renderItems();
+      this._reindexDrafts();
+      this._saveToConfig(true);
+      this._sel.clear(); this._sel.add(index); this._renderSelection(); this._fitHeight();
+      this._toast('✓ כרטיס נוסף — גרור למקום הרצוי');
+    }
+
     // Open HA's REAL card editor (visual settings + code) for a card that lives
     // INSIDE this board, by wrapping it in a throwaway one-card lovelace and
     // harvesting the edited card from the save callback. Returns false if the
@@ -652,6 +704,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.4 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.6 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();

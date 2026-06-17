@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.6] - 2026-06-17
+### Added
+- **➕ Add-card button** on the board (in edit mode) — opens Home Assistant's **native card picker** (visual + code), and the chosen card is dropped on the board, draggable. Falls back to a YAML editor if the native dialog isn't available.
+
+### Fixed
+- **Tall cards (a news / entities list, etc.) no longer overflow their box.** The "no-clip" behaviour (visible overflow + natural width — meant for short single-line cards like clocks that clip sideways) now applies **only to short cards**; tall content scales to fit and clips to its box instead of spilling over its neighbours.
+- The clock no-clip is now CSS-driven (`.item.noclip > .card-host`) and uses `width:max-content`, so a clock can't flash clipped even before the fit-scale settles.
+
 ## [Canvas Board 1.4] - 2026-06-17
 ### Added
 - **New companion component: `shimon-canvas-board`** — a *card* (not an overlay) you place in a view that holds any cards at fixed free `(x, y, w, h)` positions inside its own container, so the layout is **faithful on reload by construction**. Use it when you want a dedicated free-layout view rather than an overlay on an existing dashboard.

@@ -149,6 +149,7 @@ positions inside its own positioned container — so positions can't drift on re
 
 **Highlights**
 
+- **➕ Add card** (edit mode) — opens Home Assistant's **native card picker**; the chosen card drops on the board, draggable. No YAML required.
 - Free **drag & resize** (independent width/height), **multi-select**, **undo**.
 - **Content hug / scale** — a card scales to fit its box; whitespace collapses
   before the content shrinks; clocks & labels never clip.
