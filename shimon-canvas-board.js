@@ -378,14 +378,15 @@
       this._fitBoard();
     }
 
-    // Responsive: in VIEW mode, uniformly scale the whole board so its design
-    // width fits the viewport — fixed-pixel layouts then adapt to ANY screen,
-    // LTR or RTL. EDIT mode stays 1:1 so drag/resize coordinates are exact (the
-    // owner can scroll while arranging). No-op when the screen is already wide.
+    // Responsive: uniformly scale the whole board so its design width fits the
+    // viewport — fixed-pixel layouts then adapt to ANY screen, LTR or RTL, in BOTH
+    // view AND edit (so anyone can edit from their own screen). Drag/resize/marquee
+    // divide their screen-pixel deltas by this._fitScale so they stay pixel-exact.
+    // No-op when the screen is already wide enough.
     _fitBoard() {
       if (!this._boardEl || !this._designW) return;
       const avail = this.getBoundingClientRect().width || this._designW;
-      const fit = this._edit ? 1 : Math.max(0.25, Math.min(1, avail / this._designW));
+      const fit = Math.max(0.25, Math.min(1, avail / this._designW));   // scale in BOTH view & edit, so anyone can edit from their own screen; drag/resize divide deltas by this
       this._fitScale = fit;
       this._boardEl.style.transformOrigin = 'top left';
       this._boardEl.style.transform = fit < 0.999 ? `scale(${fit})` : 'none';
@@ -406,7 +407,7 @@
       const starts = group.map(g => ({ g, x: this._items[g].pos.x, y: this._items[g].pos.y }));
       let moved = false, pushed = false;
       const move = (ev) => {
-        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        const s2 = this._fitScale || 1; const dx = (ev.clientX - sx) / s2, dy = (ev.clientY - sy) / s2;   // screen px → board px (so drag/resize stay exact when the board is scaled to fit a smaller screen)
         if (!moved && Math.hypot(dx, dy) > 4) { moved = true; if (!pushed) { this._pushUndo(group); pushed = true; } en.itemEl.classList.add('active'); }
         if (!moved) return;
         for (const s of starts) { const it = this._items[s.g]; it.pos.x = Math.max(0, snap(s.x + dx)); it.pos.y = Math.max(0, snap(s.y + dy)); this._applyItem(s.g); }
@@ -442,7 +443,7 @@
       const startW = en.itemEl.offsetWidth || this._items[i].pos.w;
       const startH = en.itemEl.offsetHeight || this._items[i].pos.h || (this._items[i].natH || 60);
       const move = (ev) => {
-        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        const s2 = this._fitScale || 1; const dx = (ev.clientX - sx) / s2, dy = (ev.clientY - sy) / s2;   // screen px → board px (so drag/resize stay exact when the board is scaled to fit a smaller screen)
         const fw = mode !== 'h' ? Math.max(40, startW + dx) / startW : 1;
         const fh = mode !== 'w' ? Math.max(30, startH + dy) / startH : 1;
         const fBoth = Math.max(fw, fh);                 // corner: one uniform factor for the group
@@ -477,12 +478,13 @@
       if (!this._edit) return;
       e.preventDefault();
       const rect = this._boardEl.getBoundingClientRect();
-      const x0 = e.clientX - rect.left, y0 = e.clientY - rect.top;
+      const s2 = this._fitScale || 1;
+      const x0 = (e.clientX - rect.left) / s2, y0 = (e.clientY - rect.top) / s2;
       if (!e.shiftKey) this._sel.clear();
       this._renderSelection();
       const mq = this._marqueeEl; let moved = false;
       const move = (ev) => {
-        const x1 = ev.clientX - rect.left, y1 = ev.clientY - rect.top;
+        const x1 = (ev.clientX - rect.left) / s2, y1 = (ev.clientY - rect.top) / s2;
         if (!moved && Math.hypot(x1 - x0, y1 - y0) > 4) { moved = true; mq.style.display = 'block'; }
         if (!moved) return;
         const L = Math.min(x0, x1), T = Math.min(y0, y1), R = Math.max(x0, x1), B = Math.max(y0, y1);
@@ -723,6 +725,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.7 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.8 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();

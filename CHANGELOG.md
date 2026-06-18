@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.8] - 2026-06-17
+### Changed
+- **Edit mode is now responsive too.** The board scales to fit the viewport in **both view and edit**, so anyone can arrange it from their own (smaller / right-to-left) screen — drag, resize and rubber-band coordinates are corrected for the scale so a card follows the cursor 1:1. No-op when the screen is already wide.
+
 ## [Canvas Board 1.7] - 2026-06-17
 ### Added
 - **Responsive — the board scales to fit any screen.** In view mode the whole board is uniformly scaled so its design width fits the viewport, so a fixed-pixel layout **adapts to smaller screens (and right-to-left UIs)** instead of overflowing. Edit mode stays 1:1 so drag/resize coordinates remain pixel-exact (the owner can scroll while arranging). No-op when the screen is already wide enough.
