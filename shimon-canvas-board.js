@@ -360,19 +360,13 @@
         e.itemEl.style.height = Math.max(8, it.pos.h || 200) + 'px';
         return;
       }
-      const natW = it.natW || 60, natH = it.natH || 60, tightH = it.natHtight || natH;
+      const natW = it.natW || 60, natH = it.natH || 60;
       const W = it.pos.w, H = it.pos.h || natH;          // FREE box: width and height independent
-      // The content fits INSIDE the box, scaled uniformly (no distortion). As the
-      // box shrinks below natural, first collapse the internal whitespace (compact
-      // ramp → readable content stays large), then the uniform scale finishes.
-      let fit = Math.min(W / natW, H / natH);
-      let k = 0;
-      if (it.compact && tightH < natH - 1) {
-        k = Math.max(0, Math.min(1, (1 - fit) * 1.4));
-        this._setCompactLevel(i, k);
-        const effH = natH - (natH - tightH) * k;          // content height after collapsing whitespace
-        fit = Math.min(W / natW, H / effH);
-      }
+      // The content scales 1:1 with the box — uniform, no distortion. Bigger box =
+      // bigger content, smaller box = smaller content, the SAME in the live preview
+      // and after saving. (The old whitespace-collapse "compact" ramp made shrinking
+      // non-linear and the saved re-render land at a different size than the preview.)
+      const fit = Math.min(W / natW, H / natH);
       const scale = Math.max(0.05, Math.min(MAX_S, fit));
       // no-clip (natural width + visible overflow) is for SHORT single-line cards
       // (clocks/labels) that clip themselves sideways — NOT for tall content like a
@@ -477,7 +471,17 @@
         const fBoth = Math.max(fw, fh);                 // corner: one uniform factor for the group
         for (const s of starts) {
           const it = this._items[s.g];
-          if (mode === 'both') { it.pos.w = snap(Math.max(40, s.w * fBoth)); it.pos.h = snap(Math.max(30, s.h * fBoth)); }
+          if (mode === 'both') {
+            const nw = Math.max(40, s.w * fBoth);
+            if (it.fixed) { it.pos.w = snap(nw); it.pos.h = snap(Math.max(30, s.h * fBoth)); }   // camera/media: free box, keeps its rectangle
+            else {
+              // Corner = uniform ZOOM: lock the box to the CONTENT's aspect ratio so the
+              // content fills it and grows/shrinks 1:1 with the drag — never letterboxed,
+              // so "the bigger I drag, the bigger the content" and the preview == the save.
+              const aspect = (it.natH || 60) / (it.natW || 60);
+              it.pos.w = snap(nw); it.pos.h = snap(Math.max(30, nw * aspect));
+            }
+          }
           else if (mode === 'w') { it.pos.w = snap(Math.max(40, s.w * fw)); }
           else { it.pos.h = snap(Math.max(30, s.h * fh)); }
           this._applyItem(s.g);
@@ -753,6 +757,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.10 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.11 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.11] - 2026-06-20
+### Changed
+- **Resizing is now a coherent, what-you-see-is-what-you-save zoom.** Two fixes to how a card's content tracks its box:
+  - **The corner handle is a true uniform zoom.** It now locks the box to the content's own aspect ratio, so the content *fills* the box and grows/shrinks 1:1 with the drag — "the bigger I drag, the bigger everything gets." Previously the box kept whatever aspect it had, so the content was letterboxed and scaled by only the tighter dimension, which felt like it "didn't grow" when you enlarged. (Cameras/media keep their free rectangle.) The right- and bottom-edge handles still reshape width or height independently.
+  - **The live preview now matches the saved result.** Removed the whitespace-collapse "compact" ramp: it made shrinking non-linear and relied on a separately-measured tight height (timing-sensitive), so a card could settle at a different size after saving than what you saw while dragging. Content now scales uniformly in both directions, identically in the editor and after save.
+
 ## [Canvas Board 1.10] - 2026-06-20
 ### Fixed
 - **A news ticker (or any list with its own scrolling/clipping) no longer spills out of its box.** The "no-clip" helper — which forces a card's content to show in full, meant for short single-line cards like clocks that clip themselves sideways — was being injected into *every* button-card, including tall cards that have their *own* intentional `overflow:hidden` (a news feed, an entities list). That override defeated their internal clipping, so all the rows rendered at once and overflowed past the card's header. The override is now **gated by the card's measured height** at every injection site and is **removed** as soon as a card turns out to be tall — so short clip-prone labels still show in full, while tall self-clipping cards keep their own scrolling viewport inside the box.
