@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.10] - 2026-06-20
+### Fixed
+- **A news ticker (or any list with its own scrolling/clipping) no longer spills out of its box.** The "no-clip" helper — which forces a card's content to show in full, meant for short single-line cards like clocks that clip themselves sideways — was being injected into *every* button-card, including tall cards that have their *own* intentional `overflow:hidden` (a news feed, an entities list). That override defeated their internal clipping, so all the rows rendered at once and overflowed past the card's header. The override is now **gated by the card's measured height** at every injection site and is **removed** as soon as a card turns out to be tall — so short clip-prone labels still show in full, while tall self-clipping cards keep their own scrolling viewport inside the box.
+
 ## [Canvas Board 1.9] - 2026-06-20
 ### Changed
 - **One button to finish.** The separate "save to all devices" button is gone. The edit toggle now reads **✓ Done & Save** while editing — clicking it exits edit mode *and* saves the layout to every device in one action. No more choosing between several save options.

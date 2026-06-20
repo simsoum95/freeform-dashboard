@@ -155,7 +155,7 @@
       for (let i = 0; i < this._items.length; i++) {
         if (!this._children[i]) {
           const it = this._items[i];
-          const itemEl = document.createElement('div'); itemEl.className = 'item' + (it.noclip ? ' noclip' : '');
+          const itemEl = document.createElement('div'); itemEl.className = 'item' + (this._ncActive(it) ? ' noclip' : '');
           const host = document.createElement('div'); host.className = 'card-host';
           const cover = document.createElement('div'); cover.className = 'cover';
           const rz = document.createElement('div'); rz.className = 'rz';
@@ -174,11 +174,13 @@
           try { el = await this._helpers.createCardElement(it.card); }
           catch (e) { el = document.createElement('ha-card'); el.textContent = 'card error: ' + e.message; }
           if (this._hass) el.hass = this._hass;
-          el.style.width = it.noclip ? 'max-content' : (it.natW + 'px');   // noclip → natural width (can't self-clip); else pin (no reflow while zooming)
+          el.style.width = this._ncActive(it) ? 'max-content' : (it.natW + 'px');   // noclip → natural width (can't self-clip); else pin (no reflow while zooming)
           el.style.height = 'auto';
           host.appendChild(el);
           entry.el = el;
-          if (it.noclip) this._applyNoClip(el);
+          // no-clip is now applied centrally by _applyItem/_syncNoClip (gated by the
+          // MEASURED height) so the destructive overflow:visible override is never
+          // injected into a tall self-clipping card (news ticker / entities list).
           if (it.fixed) this._ensureFixed(i);
           else if (it.compact) this._ensureCompact(i);
           cover.addEventListener('pointerdown', (e) => this._beginDrag(e, at()));
@@ -254,6 +256,31 @@
       inject(el, 0);   // re-applied by the heartbeat too, so a late/rebuilt shadow never loses it
     }
 
+    // Strip the no-clip override — the exact mirror of _applyNoClip. Tall cards
+    // (a news ticker, an entities list) have their OWN intentional overflow:hidden
+    // that must NOT be destroyed; if the override was ever injected while the
+    // card's height was still unknown, remove it once we know the card is tall.
+    _removeNoClip(el) {
+      const strip = (node, d) => {
+        if (d > 20 || !node) return;
+        if (node.shadowRoot) { const s = node.shadowRoot.querySelector('style[data-sf-noclip]'); if (s) s.remove(); strip(node.shadowRoot, d + 1); }
+        const all = node.querySelectorAll ? node.querySelectorAll('*') : [];
+        for (const x of all) if (x.shadowRoot) strip(x, d + 1);
+      };
+      strip(el, 0);
+    }
+    // No-clip is ONLY for short single-line cards (clocks/labels) that clip
+    // themselves sideways. A tall card (natH ≥ 130) keeps its own clipping.
+    // natH 0 = not measured yet → treat as clock-like so a real clock never flashes.
+    _ncActive(it) { return !!it.noclip && ((it.natH || 0) === 0 || it.natH < 130); }
+    // Inject the override for short cards, remove it for tall ones — but only when
+    // the state actually flips, so we don't walk the shadow tree on every frame.
+    _syncNoClip(i, on) {
+      const e = this._children[i]; if (!e || !e.el || e._ncOn === on) return;
+      e._ncOn = on;
+      if (on) this._applyNoClip(e.el); else this._removeNoClip(e.el);
+    }
+
     // Insert a (toggleable) compact stylesheet into the card's shadow roots.
     // Toggled by textContent so it's reliable across browsers (style.disabled
     // isn't). Idempotent: skips roots that already have one.
@@ -314,7 +341,8 @@
       for (let i = 0; i < this._children.length; i++) {
         const e = this._children[i], it = this._items[i];
         if (!e || !e.el || !e.el.isConnected) continue;
-        if (it.noclip && ((it.natH || 0) === 0 || it.natH < 130)) this._applyNoClip(e.el);
+        if (this._ncActive(it)) this._applyNoClip(e.el);          // heal short cards whose shadow rebuilt (a clock ticks every second)
+        else if (it.noclip) this._removeNoClip(e.el);             // tall card flagged noclip → make sure the override never lingers
         else if (it.fixed) this._ensureFixed(i);
       }
     }
@@ -350,7 +378,7 @@
       // (clocks/labels) that clip themselves sideways — NOT for tall content like a
       // news list, which must scale-to-fit and clip to its box. natH 0 = not measured
       // yet → treat as clock-like so a real clock never flashes clipped on first paint.
-      const nc = it.noclip && ((it.natH || 0) === 0 || it.natH < 130);
+      const nc = this._ncActive(it);
       e.el.style.transformOrigin = 'top left';
       e.el.style.transform = `scale(${scale})`;
       e.el.style.width = nc ? 'max-content' : (natW + 'px');
@@ -364,6 +392,7 @@
       // (scaled to fit) instead of spilling over its neighbours.
       if (e.host) e.host.style.overflow = nc ? 'visible' : '';
       if (e.itemEl) e.itemEl.classList.toggle('noclip', nc);
+      this._syncNoClip(i, nc);   // inject the clip-override for short cards, STRIP it for tall ones (news/list keep their own overflow:hidden)
     }
 
     _fitHeight() {
@@ -682,14 +711,14 @@
       const ctype = (it.card && it.card.type) || '';
       it.fixed = it.fixed === true || /camera|webrtc|picture|image|iframe|video/i.test(ctype);
       it.noclip = it.noclip === true || /button-card|clock/i.test(ctype);
-      en.itemEl.classList.toggle('noclip', !!it.noclip);
+      en.itemEl.classList.toggle('noclip', this._ncActive(it));
       let el;
       try { el = await this._helpers.createCardElement(it.card); }
       catch (e) { el = document.createElement('ha-card'); el.textContent = 'card error: ' + e.message; }
       if (this._hass) el.hass = this._hass;
-      el.style.width = it.noclip ? 'max-content' : ((it.natW || it.baseW) + 'px'); el.style.height = 'auto';
-      en.host.appendChild(el); en.el = el;
-      if (it.noclip) this._applyNoClip(el);
+      el.style.width = this._ncActive(it) ? 'max-content' : ((it.natW || it.baseW) + 'px'); el.style.height = 'auto';
+      en.host.appendChild(el); en.el = el; en._ncOn = undefined;   // fresh element → re-evaluate the clip-override from scratch
+      // no-clip applied centrally by _applyItem below (gated by measured height)
       if (it.fixed) this._ensureFixed(i); else if (it.compact) this._ensureCompact(i);
       try { const ro = new ResizeObserver(() => this._measure(this._children.indexOf(en))); ro.observe(el); } catch (e) {}
       requestAnimationFrame(() => this._measure(i));
@@ -724,6 +753,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.9 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.10 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();
