@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.9] - 2026-06-20
+### Changed
+- **One button to finish.** The separate "save to all devices" button is gone. The edit toggle now reads **✓ Done & Save** while editing — clicking it exits edit mode *and* saves the layout to every device in one action. No more choosing between several save options.
+
+### Fixed
+- **What you resize is what you get — live.** While dragging a card's resize handle (or moving it), the content now scales to fit the box **as you drag**, so you can see exactly what you're enlarging or shrinking. Previously the content only snapped to the right scale *after* you saved, so text could appear to spill out of the frame mid-resize (especially in right-to-left layouts). The card now re-measures its natural size at the start of every resize, so the live preview matches the saved result.
+
 ## [Canvas Board 1.8] - 2026-06-17
 ### Changed
 - **Edit mode is now responsive too.** The board scales to fit the viewport in **both view and edit**, so anyone can arrange it from their own (smaller / right-to-left) screen — drag, resize and rubber-band coordinates are corrected for the scale so a card follows the cursor 1:1. No-op when the screen is already wide.

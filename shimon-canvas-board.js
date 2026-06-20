@@ -132,7 +132,6 @@
         <div class="bar">
           <span class="hint">עריכה — גרור להזזה · פינה/צד לגודל · לחץ לבחור · Shift או סימון לקבוצה</span>
           <button class="btn add" type="button">➕ כרטיס</button>
-          <button class="btn save" type="button">💾 שמור לכל המכשירים</button>
           <button class="btn undo" type="button">↶ ביטול</button>
           <button class="btn edit" type="button"></button>
         </div>
@@ -143,7 +142,6 @@
       this._boardEl.addEventListener('pointerdown', (e) => { if (e.target === this._boardEl) this._beginMarquee(e); });
       sh.querySelector('.edit').addEventListener('click', () => this._toggleEdit());
       sh.querySelector('.undo').addEventListener('click', () => this.undo());
-      sh.querySelector('.save').addEventListener('click', () => this._saveToConfig());
       sh.querySelector('.add').addEventListener('click', () => this._addCard());
       this._helpers = await window.loadCardHelpers();
       await this._renderItems();
@@ -393,8 +391,8 @@
       this._boardEl.style.marginBottom = (fit < 0.999 && this._designH) ? `${Math.round(-this._designH * (1 - fit))}px` : '';
     }
 
-    _toggleEdit() { this._edit = !this._edit; try { localStorage.setItem(editKey(this._boardId), this._edit ? '1' : '0'); } catch {} this._applyEditMode(); }
-    _applyEditMode() { this.classList.toggle('editing', this._edit); const b = this.shadowRoot.querySelector('.edit'); if (b) b.textContent = this._edit ? '✓ סיום עריכה' : '✎ עריכה'; if (!this._edit) { this._sel.clear(); this._renderSelection(); } this._fitBoard(); }
+    _toggleEdit() { const was = this._edit; this._edit = !this._edit; try { localStorage.setItem(editKey(this._boardId), this._edit ? '1' : '0'); } catch {} this._applyEditMode(); if (was && !this._edit) this._saveToConfig(); }   // finishing edit → auto-save to all devices
+    _applyEditMode() { this.classList.toggle('editing', this._edit); const b = this.shadowRoot.querySelector('.edit'); if (b) b.textContent = this._edit ? '✓ סיום ושמירה' : '✎ עריכה'; if (!this._edit) { this._sel.clear(); this._renderSelection(); } this._fitBoard(); }
 
     _beginDrag(e, i) {
       if (!this._edit) return;
@@ -437,6 +435,7 @@
       en.itemEl.classList.add('active');
       // Resize the WHOLE selection together (proportional) if this card is in it.
       const group = (this._sel.has(i) && this._sel.size > 1) ? [...this._sel] : [i];
+      for (const g of group) this._measure(g);   // refresh natW/natH so the LIVE resize scales the content correctly — was only right after a save re-render
       this._pushUndo(group);
       const starts = group.map(g => ({ g, w: this._items[g].pos.w, h: this._items[g].pos.h || (this._items[g].natH || 60) }));
       const sx = e.clientX, sy = e.clientY;
@@ -725,6 +724,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.8 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.9 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();
