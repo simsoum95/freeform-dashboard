@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.12] - 2026-06-20
+### Fixed
+- **A card now stays exactly where and how you set it after "Done & Save."** The responsive fit-to-screen scaler was recomputing the board's design width from the *live* content every time you resized or moved a card — so enlarging a card grew the design width, which zoomed the whole board *out* to compensate, and the card ended up the same apparent size (or smaller). On save the board re-rendered and rescaled again, so the result didn't match what you'd arranged. The design width is now a **stable canvas width**: computed once from the authored layout, **frozen** during editing (so resizing/moving never rescales the board), and **persisted** in the saved config so the scale is identical on every device and after every reload. What you arrange is what you get.
+
 ## [Canvas Board 1.11] - 2026-06-20
 ### Changed
 - **Resizing is now a coherent, what-you-see-is-what-you-save zoom.** Two fixes to how a card's content tracks its box:

@@ -60,6 +60,7 @@
       this._boardId = config.board_id || 'board';
       this._urlPath = config.url_path || (location.pathname.split('/').filter(Boolean)[0]) || 'lovelace';
       this._height = config.height || null;
+      this._designW = config.design_width || this._designW || 0;   // STABLE canvas width for the responsive fit — from the saved config, else kept across config echoes, else computed once in _fitHeight. Frozen so editing never rescales the board.
       this._items = config.items.map((it, i) => {
         const baseW = it.w || 280;                    // configured base box width
         const saved = loadPos(this._boardId, i) || {};
@@ -392,7 +393,7 @@
     _fitHeight() {
       let maxR = 0, maxB = 0;
       for (let i = 0; i < this._items.length; i++) { const it = this._items[i]; maxR = Math.max(maxR, it.pos.x + (it.pos.w || it.natW || 60)); maxB = Math.max(maxB, it.pos.y + (it.pos.h || it.natH || 60)); }
-      this._designW = maxR + 24;
+      if (!this._designW) this._designW = maxR + 24;   // compute the canvas width ONCE (authored extent) then FREEZE it — never let a live resize/move grow it, which would zoom the whole board out from under the user and make the saved result differ from what they set (WYSIWYG)
       const h = this._height || (maxB + PAD);
       this._designH = h;
       this._boardEl.style.height = h + 'px';
@@ -555,6 +556,7 @@
           if (it.compact === false) o.compact = false;
           return o;
         });
+        if (this._designW) found.design_width = this._designW;   // persist the frozen canvas width so the fit-scale is identical on every device & reload (no rescale after save)
         await hass.callWS(up ? { type: 'lovelace/config/save', url_path: up, config: cfg } : { type: 'lovelace/config/save', config: cfg });
         this._toast('✓ נשמר בכל המכשירים');
       } catch (e) {
@@ -757,6 +759,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.11 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.12 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();
