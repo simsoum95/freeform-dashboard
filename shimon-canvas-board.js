@@ -62,7 +62,7 @@
       this._height = config.height || null;
       this._designW = config.design_width || this._designW || 0;   // STABLE canvas width for the responsive fit — from the saved config, else kept across config echoes, else computed once in _fitHeight. Frozen so editing never rescales the board.
       this._items = config.items.map((it, i) => {
-        const baseW = it.w || 280;                    // configured base box width
+        const baseW = it.bw || it.w || 280;           // STABLE measurement width: the content's natural size is ALWAYS measured at this authored width, never at the resized box width. Otherwise a resize+save re-measures the content at the new (wider) box on reload → natW≈box → the zoom collapses back to 1.0 (the "ça reste pas comme je l'ai décidé" bug). Persisted as `bw`.
         const saved = loadPos(this._boardId, i) || {};
         const ctype = (it.card && it.card.type) || '';
         const fixed = it.fixed === true || /camera|webrtc|picture|image|iframe|video/i.test(ctype);
@@ -70,7 +70,7 @@
         return {
           card: it.card, idx: i, baseW, natW: baseW, noclip, fixed, compact: (it.compact !== false) && !fixed,  // fixed: camera/media fills the box; compact: collapse whitespace; noclip: don't self-clip
           natH: it.h || 0, natHtight: 0,              // measured at runtime (loose + compact content heights)
-          pos: { x: saved.x != null ? saved.x : (it.x || 0), y: saved.y != null ? saved.y : (it.y || 0), w: saved.w != null ? saved.w : baseW, h: saved.h != null ? saved.h : (it.h || 0) },
+          pos: { x: saved.x != null ? saved.x : (it.x || 0), y: saved.y != null ? saved.y : (it.y || 0), w: saved.w != null ? saved.w : (it.w || baseW), h: saved.h != null ? saved.h : (it.h || 0) },   // box width = it.w (the RESIZED width), separate from baseW (the stable measurement width)
         };
       });
       try { this._edit = localStorage.getItem(editKey(this._boardId)) === '1'; } catch {}
@@ -551,7 +551,7 @@
         walk(cfg);
         if (!found) { this._toast('הלוח לא נמצא בתצורה', true); return; }
         found.items = this._items.map((it) => {
-          const o = { x: it.pos.x, y: it.pos.y, w: it.pos.w, h: it.pos.h, card: it.card };
+          const o = { x: it.pos.x, y: it.pos.y, w: it.pos.w, h: it.pos.h, bw: it.baseW, card: it.card };   // persist baseW as `bw` so the content is re-measured at the SAME width on reload → the zoom is reproduced exactly (WYSIWYG)
           if (it.noclip) o.noclip = true;
           if (it.compact === false) o.compact = false;
           return o;
@@ -759,6 +759,6 @@
     window.customCards.push({ type: 'shimon-canvas-board', name: 'Shimon Canvas Board', description: 'Free-canvas board: place cards anywhere, content scales, faithful on reload.' });
     window.shimonBoardReset = function () { const pre = `shimon-board:${location.pathname.split('?')[0]}:`; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(pre)) localStorage.removeItem(k); } location.reload(); };
     window.shimonBoardUndo = function () { document.querySelectorAll('shimon-canvas-board').forEach(b => b.undo && b.undo()); };
-    console.info('%c SHIMON-CANVAS-BOARD %c v1.12 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
+    console.info('%c SHIMON-CANVAS-BOARD %c v1.13 ', 'background:#1e5aa6;color:#fff;padding:2px 8px;border-radius:4px', 'background:#26314d;color:#fff;padding:2px 8px;border-radius:4px');
   }
 })();

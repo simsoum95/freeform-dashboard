@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [Canvas Board 1.13] - 2026-06-20
+### Fixed
+- **An enlarged card now keeps its zoom after saving — verified with an automated reload-fidelity test.** The content's natural size was measured at the card's *current box width*, so after you enlarged a card and saved, the next load re-measured the content at the new wider box → the natural width came out ≈ the box width → the zoom collapsed back to 1× (the content shrank inside the box you'd grown). The natural size is now always measured at a **stable authored width** that is persisted with the card (`bw`) and never changes when you resize, so the content scale is reproduced exactly on reload and on every device. Confirmed by a headless-browser test that enlarges a card ×1.4, saves, reloads (same device and a fresh device), and asserts the on-screen box *and* content scale are identical.
+
 ## [Canvas Board 1.12] - 2026-06-20
 ### Fixed
 - **A card now stays exactly where and how you set it after "Done & Save."** The responsive fit-to-screen scaler was recomputing the board's design width from the *live* content every time you resized or moved a card — so enlarging a card grew the design width, which zoomed the whole board *out* to compensate, and the card ended up the same apparent size (or smaller). On save the board re-rendered and rescaled again, so the result didn't match what you'd arranged. The design width is now a **stable canvas width**: computed once from the authored layout, **frozen** during editing (so resizing/moving never rescales the board), and **persisted** in the saved config so the scale is identical on every device and after every reload. What you arrange is what you get.
